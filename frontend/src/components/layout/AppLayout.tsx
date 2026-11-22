@@ -88,16 +88,18 @@ export function AppLayout() {
   }, [mobileOpen])
 
   return (
-    <div className="app-shell flex min-h-dvh text-ink">
-      <div className="hidden lg:flex">
-        <Sidebar collapsed={collapsed} onToggleCollapse={() => setCollapsed((value) => !value)} />
-      </div>
+    <div className="app-backdrop min-h-dvh w-full text-ink lg:p-[22px] xl:p-[26px]">
+      <div className="app-frame mx-auto flex min-h-dvh w-full max-w-[1640px] flex-col lg:min-h-[calc(100dvh-44px)] lg:flex-row lg:gap-[18px] lg:rounded-[28px] lg:p-4 xl:min-h-[calc(100dvh-52px)] xl:gap-[22px] xl:p-[18px]">
+        <div className="hidden shrink-0 lg:flex">
+          <Sidebar collapsed={collapsed} onToggleCollapse={() => setCollapsed((value) => !value)} />
+        </div>
 
-      <div ref={contentRef} className="flex min-w-0 flex-1 flex-col">
-        <Topbar onOpenMenu={() => setMobileOpen(true)} menuOpen={mobileOpen} />
-        <PageTransition>
-          <Outlet />
-        </PageTransition>
+        <div ref={contentRef} className="flex min-w-0 flex-1 flex-col">
+          <Topbar onOpenMenu={() => setMobileOpen(true)} menuOpen={mobileOpen} />
+          <PageTransition>
+            <Outlet />
+          </PageTransition>
+        </div>
       </div>
 
       <MotionPresence open={mobileOpen}>
@@ -111,7 +113,7 @@ export function AppLayout() {
             role="dialog"
             aria-modal="true"
             aria-label="Menu de navegação"
-            className="drawer-panel absolute inset-y-0 left-0 w-[min(300px,85vw)] bg-sidebar shadow-2xl"
+            className="drawer-panel absolute inset-y-3 left-3 w-[min(280px,84vw)] overflow-hidden rounded-[20px] bg-sidebar shadow-2xl"
           >
             <Sidebar mobile onNavigate={close} onClose={close} />
           </div>

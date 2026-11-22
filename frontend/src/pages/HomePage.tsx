@@ -1,11 +1,7 @@
 import {
   BookOpenCheck,
-  CalendarDays,
-  CheckCircle2,
   Clock3,
-  Layers,
   ListTodo,
-  Sparkles,
   TriangleAlert,
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -15,48 +11,51 @@ import {
   getDashboardSummary,
   listAcademicTasks,
   listCalendarItems,
-  listFlashcards,
   listStudentSubjects,
   toggleAcademicTaskComplete,
 } from '../api/client'
-import type { AcademicTask, CalendarItem, DashboardSummary, Flashcard, StudentSubject } from '../api/types'
-import { useAuth } from '../auth/AuthContext'
+import type { AcademicTask, CalendarItem, DashboardSummary, StudentSubject } from '../api/types'
 import { Alert } from '../components/Feedback'
+import { DayAppointments } from '../components/dashboard/DayAppointments'
 import { FocusCard } from '../components/dashboard/FocusCard'
 import { MetricCard } from '../components/dashboard/MetricCard'
 import { MiniCalendar } from '../components/dashboard/MiniCalendar'
 import { SubjectBooks } from '../components/dashboard/SubjectBooks'
 import { UpcomingTasks } from '../components/dashboard/UpcomingTasks'
 import { WeeklyActivity } from '../components/dashboard/WeeklyActivity'
-import { toLocalDateKey } from '../utils/calendar'
+import { buildMonthCells, parseDateKey, toLocalDateKey } from '../utils/calendar'
 import {
   buildWeekLoad,
-  formatLongDate,
   formatMinutes,
-  getGreeting,
   getWeekDays,
 } from '../utils/dashboard'
 
 export function HomePage() {
-  const { user } = useAuth()
   const [summary, setSummary] = useState<DashboardSummary | null>(null)
   const [subjects, setSubjects] = useState<StudentSubject[]>([])
   const [tasks, setTasks] = useState<AcademicTask[]>([])
-  const [flashcards, setFlashcards] = useState<Flashcard[]>([])
-  const [weekItems, setWeekItems] = useState<CalendarItem[]>([])
+  const [calendarItems, setCalendarItems] = useState<CalendarItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [partialError, setPartialError] = useState('')
   const [calendarError, setCalendarError] = useState(false)
   const [busyTaskId, setBusyTaskId] = useState<string | null>(null)
   const [selectedDateKey, setSelectedDateKey] = useState(() => toLocalDateKey(new Date()))
+  const [viewMonth, setViewMonth] = useState(() => {
+    const now = new Date()
+    return new Date(now.getFullYear(), now.getMonth(), 1)
+  })
   const [reloadKey, setReloadKey] = useState(0)
 
-  const firstName = user?.full_name.trim().split(/\s+/)[0] || 'estudante'
+  const monthCells = useMemo(() => buildMonthCells(viewMonth), [viewMonth])
 
   useEffect(() => {
     let alive = true
     const weekDays = getWeekDays(new Date())
+    const firstMonthCell = monthCells[0]?.date ?? weekDays[0]
+    const lastMonthCell = monthCells[monthCells.length - 1]?.date ?? weekDays[6]
+    const rangeStart = firstMonthCell < weekDays[0] ? firstMonthCell : weekDays[0]
+    const rangeEnd = lastMonthCell > weekDays[6] ? lastMonthCell : weekDays[6]
 
     async function loadDashboard() {
       setLoading(true)
@@ -64,25 +63,24 @@ export function HomePage() {
       setPartialError('')
       setCalendarError(false)
 
-      const [summaryResult, subjectsResult, tasksResult, flashcardsResult, calendarResult] =
+      const [summaryResult, subjectsResult, tasksResult, calendarResult] =
         await Promise.allSettled([
           getDashboardSummary(),
           listStudentSubjects(),
           listAcademicTasks(),
-          listFlashcards(),
           listCalendarItems({
             from: new Date(
-              weekDays[0].getFullYear(),
-              weekDays[0].getMonth(),
-              weekDays[0].getDate(),
+              rangeStart.getFullYear(),
+              rangeStart.getMonth(),
+              rangeStart.getDate(),
               0,
               0,
               0,
             ).toISOString(),
             to: new Date(
-              weekDays[6].getFullYear(),
-              weekDays[6].getMonth(),
-              weekDays[6].getDate(),
+              rangeEnd.getFullYear(),
+              rangeEnd.getMonth(),
+              rangeEnd.getDate(),
               23,
               59,
               59,
@@ -104,9 +102,7 @@ export function HomePage() {
       if (tasksResult.status === 'fulfilled') setTasks(tasksResult.value)
       else setPartialError('Não foi possível carregar suas tarefas.')
 
-      if (flashcardsResult.status === 'fulfilled') setFlashcards(flashcardsResult.value)
-
-      if (calendarResult.status === 'fulfilled') setWeekItems(calendarResult.value)
+      if (calendarResult.status === 'fulfilled') setCalendarItems(calendarResult.value)
       else setCalendarError(true)
 
       setLoading(false)
@@ -116,7 +112,7 @@ export function HomePage() {
     return () => {
       alive = false
     }
-  }, [reloadKey])
+  }, [reloadKey, monthCells])
 
   const pendingTasks = useMemo(
     () =>
@@ -132,10 +128,15 @@ export function HomePage() {
 
   const nextTask =
     summary?.upcoming_tasks.find((task) => task.status !== 'completed') ?? pendingTasks[0] ?? null
-  const dueFlashcards = flashcards.filter((card) => card.is_due).length
+
+  const activeWeekDays = useMemo(
+    () => getWeekDays(parseDateKey(selectedDateKey)),
+    [selectedDateKey],
+  )
+
   const weekLoads = useMemo(
-    () => buildWeekLoad(getWeekDays(new Date()), weekItems, tasks),
-    [weekItems, tasks],
+    () => buildWeekLoad(activeWeekDays, calendarItems, tasks),
+    [activeWeekDays, calendarItems, tasks],
   )
 
   const retry = useCallback(() => setReloadKey((value) => value + 1), [])
@@ -161,43 +162,26 @@ export function HomePage() {
   const summaryValue = summary ?? null
 
   return (
-    <div className="mx-auto w-full max-w-[1360px] px-4 pt-4 pb-8 sm:px-6 lg:px-7 lg:pt-6">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-[10px] font-bold tracking-[0.16em] text-muted">
-            {formatLongDate(new Date())}
-          </p>
-          <h1 className="mt-1 text-xl font-black tracking-tight text-ink sm:text-2xl">
-            {getGreeting()}, {firstName}{' '}
-            <span aria-hidden="true" className="inline-block">
-              👋
-            </span>
-          </h1>
-          <p className="mt-1 text-[13px] text-muted">
-            Seu dia, suas entregas e seu ritmo em um só lugar.
-          </p>
-        </div>
-      </header>
-
+    <div className="mx-auto w-full px-4 pt-1 pb-6 sm:px-5 lg:px-5">
       {!loading && summaryValue?.subjects_count === 0 ? (
-        <section className="mt-4 overflow-hidden rounded-[20px] border border-accent/40 bg-accent/15 p-4 sm:p-5">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <section className="mb-4 overflow-hidden rounded-[18px] border border-[var(--card-border)] bg-[var(--surface-soft)] p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-[11px] font-bold tracking-[0.16em] text-ink/60 uppercase">
+              <p className="text-[10px] font-semibold tracking-[0.12em] text-[var(--text-secondary)] uppercase">
                 Primeiros passos
               </p>
-              <h2 className="mt-1 text-lg font-black tracking-tight text-ink">
+              <h2 className="mt-0.5 text-[16px] font-bold tracking-tight text-[var(--text-primary)]">
                 Vamos montar seu semestre
               </h2>
-              <p className="mt-1 text-[13px] text-ink/70">
+              <p className="mt-0.5 text-[12px] text-[var(--text-secondary)]">
                 Selecione suas disciplinas para liberar o calendário e o progresso.
               </p>
             </div>
             <Link
               to="/disciplinas"
-              className="press inline-flex min-h-9 shrink-0 items-center gap-2 rounded-lg bg-accent px-3 text-[13px] font-bold text-accent-ink transition hover:bg-accent-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ink)]"
+              className="press inline-flex h-9 shrink-0 items-center gap-2 rounded-[12px] bg-[var(--accent-lime)] px-3.5 text-[12px] font-semibold text-[#17172F] transition hover:bg-[var(--accent-lime-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ink)]"
             >
-              <BookOpenCheck size={17} aria-hidden="true" />
+              <BookOpenCheck size={16} aria-hidden="true" />
               Configurar disciplinas
             </Link>
           </div>
@@ -205,14 +189,14 @@ export function HomePage() {
       ) : null}
 
       {error ? (
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="flex-1">
             <Alert>{error}</Alert>
           </div>
           <button
             type="button"
             onClick={retry}
-            className="press inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl border border-line bg-surface px-4 text-sm font-bold text-ink transition hover:border-accent"
+            className="press inline-flex min-h-10 shrink-0 items-center justify-center rounded-xl border border-[var(--card-border)] bg-surface px-4 text-xs font-semibold text-ink transition hover:border-[var(--accent-lime)]"
           >
             Tentar novamente
           </button>
@@ -220,25 +204,26 @@ export function HomePage() {
       ) : null}
 
       {partialError ? (
-        <div className="mt-3 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
+        <div className="mb-3 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
           <TriangleAlert size={15} aria-hidden="true" className="shrink-0" />
           <span className="flex-1">{partialError}</span>
           <button
             type="button"
             onClick={retry}
-            className="font-bold underline decoration-2 underline-offset-2"
+            className="font-semibold underline decoration-2 underline-offset-2"
           >
             Recarregar
           </button>
         </div>
       ) : null}
 
-      <div className="mt-3 grid gap-3 xl:grid-cols-12">
-        <div className="grid min-w-0 gap-3 sm:grid-cols-2 xl:col-span-8 2xl:grid-cols-4">
+      {/* Primeira faixa — 4 indicadores (~66%) à esquerda + Foco de hoje (~34%) à direita */}
+      <div className="grid gap-3.5 xl:grid-cols-12 xl:gap-4">
+        <div className="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-4 xl:col-span-8 xl:gap-3.5">
           <MetricCard
             label="Disciplinas ativas"
             value={summaryValue?.subjects_count ?? 0}
-            detail={`${subjects.length} ${subjects.length === 1 ? 'matéria ativa' : 'matérias ativas'} neste semestre`}
+            detail={`${subjects.length} ${subjects.length === 1 ? 'matéria ativa' : 'matérias ativas'}`}
             icon={BookOpenCheck}
             tone="lilac"
             to="/disciplinas"
@@ -247,9 +232,9 @@ export function HomePage() {
           <MetricCard
             label="Tarefas pendentes"
             value={summaryValue?.pending_tasks_count ?? 0}
-            detail={`${summaryValue?.completed_tasks_count ?? 0} concluídas até agora`}
+            detail={`${summaryValue?.completed_tasks_count ?? 0} concluídas`}
             icon={ListTodo}
-            tone="sky"
+            tone="peach"
             to="/tarefas"
             loading={loading}
           />
@@ -258,7 +243,7 @@ export function HomePage() {
             value={summaryValue?.overdue_tasks_count ?? 0}
             detail={
               (summaryValue?.overdue_tasks_count ?? 0) > 0
-                ? 'Priorize estas entregas hoje'
+                ? 'Priorize hoje'
                 : 'Nenhuma atrasada'
             }
             icon={TriangleAlert}
@@ -285,15 +270,38 @@ export function HomePage() {
             loading={loading}
           />
         </div>
+      </div>
 
-        <div className="grid min-w-0 gap-3 xl:col-span-7">
-          <WeeklyActivity
-            loads={weekLoads}
-            selectedKey={selectedDateKey}
-            onSelectDay={setSelectedDateKey}
-            loading={loading}
-            error={calendarError}
-            onRetry={retry}
+      {/* Grade principal — 3 colunas distintas (1.1fr 0.9fr 1fr) */}
+      <div className="mt-4 grid gap-3.5 lg:grid-cols-2 lg:gap-4 xl:grid-cols-[1.1fr_0.9fr_1fr]">
+        {/* Coluna 1 (Esquerda): Carga da semana — 7º item no mobile (order-4 no container) */}
+        <WeeklyActivity
+          className="order-4 min-w-0 lg:order-1 xl:col-start-1 xl:row-start-1"
+          loads={weekLoads}
+          selectedKey={selectedDateKey}
+          onSelectDay={setSelectedDateKey}
+          loading={loading}
+          error={calendarError}
+          onRetry={retry}
+        />
+
+        {/* Coluna 2 (Centro): Compromissos do dia — 4º item no mobile (order-1 no container) */}
+        <DayAppointments
+          className="order-1 min-w-0 lg:order-2 xl:col-start-2 xl:row-start-1"
+          items={calendarItems}
+          selectedDateKey={selectedDateKey}
+          loading={loading}
+          error={calendarError}
+          onRetry={retry}
+        />
+
+        {/* Coluna 3 (Direita): Calendário compacto no topo + Atividades logo abaixo */}
+        <div className="order-2 flex min-w-0 flex-col gap-3.5 lg:order-3 lg:gap-4 xl:col-start-3 xl:row-span-2 xl:row-start-1">
+          <MiniCalendar
+            selectedDateKey={selectedDateKey}
+            onSelectDate={setSelectedDateKey}
+            items={calendarItems}
+            onMonthChange={setViewMonth}
           />
 
           <UpcomingTasks
@@ -306,66 +314,9 @@ export function HomePage() {
           />
         </div>
 
-        <div className="grid min-w-0 gap-3 xl:col-span-5">
-          <MiniCalendar
-            selectedDateKey={selectedDateKey}
-            onSelectDate={setSelectedDateKey}
-          />
-
-          <section className="dashboard-card p-4 sm:p-5" aria-labelledby="review-card">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h2 id="review-card" className="text-[15px] font-black tracking-tight text-ink">
-                  Revisões pendentes
-                </h2>
-                <p className="mt-0.5 text-[11px] text-muted">Repetição espaçada</p>
-              </div>
-              <span className="grid size-8 place-items-center rounded-xl bg-pastel-mint">
-                <Layers size={15} aria-hidden="true" className="text-ink/70" />
-              </span>
-            </div>
-
-            <div className="mt-3 flex items-end justify-between gap-3">
-              <div>
-                <p className="text-2xl leading-none font-black tracking-tight text-ink">
-                  {dueFlashcards}
-                </p>
-                <p className="mt-1.5 text-[11px] text-muted">
-                  {dueFlashcards === 0
-                    ? 'Nenhum card vencido'
-                    : `${dueFlashcards} ${dueFlashcards === 1 ? 'card para revisar' : 'cards para revisar'} hoje`}
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Link
-                  to="/flashcards"
-                  className="press inline-flex min-h-9 items-center gap-2 rounded-lg bg-accent px-3 text-[11px] font-bold text-accent-ink transition hover:bg-accent-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ink)]"
-                >
-                  <Sparkles size={13} aria-hidden="true" />
-                  Revisar
-                </Link>
-                <Link
-                  to="/calendario"
-                  className="press inline-flex min-h-9 items-center gap-2 rounded-lg border border-line px-3 text-[11px] font-bold text-ink transition hover:border-accent"
-                >
-                  <CalendarDays size={13} aria-hidden="true" />
-                  Calendário
-                </Link>
-              </div>
-            </div>
-
-            {!loading ? (
-              <p className="mt-3 flex items-center gap-1.5 text-[10px] font-semibold text-muted">
-                <CheckCircle2 size={13} aria-hidden="true" className="text-emerald-500" />
-                {pendingTasks.length}{' '}
-                {pendingTasks.length === 1 ? 'entrega aberta' : 'entregas abertas'} no total
-              </p>
-            ) : null}
-          </section>
-        </div>
-
+        {/* Faixa inferior (Colunas 1 e 2 combinadas): Disciplinas em andamento — 8º item no mobile (order-5 no container) */}
         <SubjectBooks
-          className="min-w-0 xl:col-span-12"
+          className="order-5 min-w-0 lg:order-4 xl:col-span-2 xl:col-start-1 xl:row-start-2"
           subjects={subjects}
           loading={loading}
         />

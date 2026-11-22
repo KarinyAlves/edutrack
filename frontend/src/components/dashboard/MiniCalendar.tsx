@@ -1,16 +1,12 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
 
-import { listCalendarItems } from '../../api/client'
 import type { CalendarItem } from '../../api/types'
 import {
   buildMonthCells,
-  formatShortTime,
   getCategoryMeta,
   itemToDateKey,
   MONTH_NAMES,
-  type MonthCell,
   parseDateKey,
   toLocalDateKey,
   WEEKDAYS_SHORT,
@@ -19,57 +15,35 @@ import {
 export function MiniCalendar({
   selectedDateKey,
   onSelectDate,
+  items = [],
+  onMonthChange,
   className = '',
 }: {
   selectedDateKey: string
   onSelectDate: (key: string) => void
+  items?: CalendarItem[]
+  onMonthChange?: (month: Date) => void
   className?: string
 }) {
   const [viewMonth, setViewMonth] = useState(() => {
     const base = parseDateKey(selectedDateKey)
     return new Date(base.getFullYear(), base.getMonth(), 1)
   })
-  const [items, setItems] = useState<CalendarItem[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
-  const [reloadKey, setReloadKey] = useState(0)
+
+  // Sincroniza o mês exibido se a data selecionada vier de outro componente (ex: gráfico da semana)
+  useEffect(() => {
+    const parsed = parseDateKey(selectedDateKey)
+    if (
+      parsed.getFullYear() !== viewMonth.getFullYear() ||
+      parsed.getMonth() !== viewMonth.getMonth()
+    ) {
+      const next = new Date(parsed.getFullYear(), parsed.getMonth(), 1)
+      setViewMonth(next)
+      onMonthChange?.(next)
+    }
+  }, [selectedDateKey, viewMonth, onMonthChange])
 
   const cells = useMemo(() => buildMonthCells(viewMonth), [viewMonth])
-
-  const loadMonth = useCallback(async (monthCells: MonthCell[]) => {
-    const first = monthCells[0]?.date ?? new Date()
-    const last = monthCells[monthCells.length - 1]?.date ?? new Date()
-    return listCalendarItems({
-      from: new Date(
-        first.getFullYear(),
-        first.getMonth(),
-        first.getDate(),
-        0,
-        0,
-        0,
-      ).toISOString(),
-      to: new Date(last.getFullYear(), last.getMonth(), last.getDate(), 23, 59, 59).toISOString(),
-    })
-  }, [])
-
-  useEffect(() => {
-    let alive = true
-    setLoading(true)
-    setError(false)
-    loadMonth(cells)
-      .then((response) => {
-        if (alive) setItems(response)
-      })
-      .catch(() => {
-        if (alive) setError(true)
-      })
-      .finally(() => {
-        if (alive) setLoading(false)
-      })
-    return () => {
-      alive = false
-    }
-  }, [cells, loadMonth, reloadKey])
 
   const byDay = useMemo(() => {
     const map = new Map<string, CalendarItem[]>()
@@ -80,18 +54,15 @@ export function MiniCalendar({
       if (bucket) bucket.push(item)
       else map.set(key, [item])
     }
-    for (const bucket of map.values()) {
-      bucket.sort((a, b) => a.starts_at.localeCompare(b.starts_at))
-    }
     return map
   }, [items])
 
-  const agenda = byDay.get(selectedDateKey) ?? []
   const todayKey = toLocalDateKey(new Date())
 
   function shiftMonth(delta: number) {
     const next = new Date(viewMonth.getFullYear(), viewMonth.getMonth() + delta, 1)
     setViewMonth(next)
+    onMonthChange?.(next)
     const now = new Date()
     onSelectDate(
       next.getFullYear() === now.getFullYear() && next.getMonth() === now.getMonth()
@@ -101,48 +72,49 @@ export function MiniCalendar({
   }
 
   return (
-    <section className={`dashboard-card flex flex-col p-4 sm:p-5 ${className}`} aria-labelledby="mini-calendar">
+    <section
+      className={`dashboard-card flex flex-col justify-between p-[16px] ${className}`}
+      aria-labelledby="mini-calendar"
+    >
       <header className="flex items-center justify-between gap-2">
-        <div>
-          <h2 id="mini-calendar" className="text-[15px] font-black tracking-tight text-ink">
-            Calendário
-          </h2>
-          <p className="mt-0.5 text-[11px] text-muted">
-            {MONTH_NAMES[viewMonth.getMonth()]} de {viewMonth.getFullYear()}
-          </p>
-        </div>
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => shiftMonth(-1)}
-            aria-label="Mês anterior"
-            className="press grid size-7 place-items-center rounded-lg border border-line text-muted transition hover:border-accent hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ink)]"
-          >
-            <ChevronLeft size={15} aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            onClick={() => shiftMonth(1)}
-            aria-label="Próximo mês"
-            className="press grid size-7 place-items-center rounded-lg border border-line text-muted transition hover:border-accent hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ink)]"
-          >
-            <ChevronRight size={15} aria-hidden="true" />
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => shiftMonth(-1)}
+          aria-label="Mês anterior"
+          className="press grid size-[26px] place-items-center rounded-lg border border-[var(--card-border)] text-[var(--text-secondary)] transition hover:border-[var(--accent-lime)] hover:text-[var(--text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ink)]"
+        >
+          <ChevronLeft size={14} aria-hidden="true" />
+        </button>
+
+        <h2
+          id="mini-calendar"
+          className="text-[14.5px] leading-[1.2] font-semibold tracking-tight text-[var(--text-primary)]"
+        >
+          {MONTH_NAMES[viewMonth.getMonth()]} {viewMonth.getFullYear()}
+        </h2>
+
+        <button
+          type="button"
+          onClick={() => shiftMonth(1)}
+          aria-label="Próximo mês"
+          className="press grid size-[26px] place-items-center rounded-lg border border-[var(--card-border)] text-[var(--text-secondary)] transition hover:border-[var(--accent-lime)] hover:text-[var(--text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ink)]"
+        >
+          <ChevronRight size={14} aria-hidden="true" />
+        </button>
       </header>
 
-      <div className="mt-3 grid grid-cols-7 gap-1" aria-hidden="true">
+      <div className="mt-2.5 grid grid-cols-7 gap-1" aria-hidden="true">
         {WEEKDAYS_SHORT.map((label) => (
           <span
             key={label}
-            className="text-center text-[10px] font-bold tracking-wide text-muted uppercase"
+            className="text-center text-[10px] font-medium text-[var(--text-muted)]"
           >
-            {label.slice(0, 1)}
+            {label}
           </span>
         ))}
       </div>
 
-      <div className="mt-1 grid grid-cols-7 gap-1">
+      <div className="mt-1 grid grid-cols-7 gap-y-0.5 gap-x-1">
         {cells.map((cell) => {
           const dayItems = byDay.get(cell.key) ?? []
           const selected = cell.key === selectedDateKey
@@ -153,110 +125,32 @@ export function MiniCalendar({
               onClick={() => onSelectDate(cell.key)}
               aria-pressed={selected}
               aria-label={`${cell.weekdayFull}, ${cell.date.getDate()} de ${MONTH_NAMES[cell.date.getMonth()]}, ${dayItems.length} ${dayItems.length === 1 ? 'compromisso' : 'compromissos'}`}
-              className={`relative flex min-h-8 flex-col items-center justify-center rounded-lg text-[11px] font-bold transition focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--ink)] ${
+              className={`relative mx-auto flex size-[27px] flex-col items-center justify-center rounded-full text-[12px] font-medium transition focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--ink)] ${
                 selected
-                  ? 'bg-accent text-accent-ink'
+                  ? 'bg-[var(--accent-lime)] font-semibold text-[#17172F]'
                   : cell.isCurrentMonth
-                    ? 'text-ink hover:bg-surface-2'
-                    : 'text-muted/50 hover:bg-surface-2'
-              } ${cell.isToday && !selected ? 'ring-1 ring-accent ring-inset' : ''}`}
+                    ? 'text-[var(--text-primary)] hover:bg-[var(--surface-soft)]'
+                    : 'text-[var(--text-muted)]/60 hover:bg-[var(--surface-soft)]'
+              } ${cell.isToday && !selected ? 'ring-1 ring-[var(--text-primary)]/25 ring-inset' : ''}`}
             >
-              <span>{cell.date.getDate()}</span>
+              <span className="leading-none">{cell.date.getDate()}</span>
               {dayItems.length > 0 ? (
                 <span className="mt-0.5 flex items-center gap-0.5">
                   {dayItems.slice(0, 3).map((item, index) => (
                     <span
                       key={`${item.id}-${index}`}
-                      className={`size-1 rounded-full ${selected ? 'bg-accent-ink/70' : getCategoryMeta(item).dotClass}`}
+                      className={`size-1 rounded-full ${
+                        selected ? 'bg-[#17172F]/75' : getCategoryMeta(item).dotClass
+                      }`}
                     />
                   ))}
-                  {dayItems.length > 3 ? (
-                    <span className="text-[8px] leading-none">+{dayItems.length - 3}</span>
-                  ) : null}
                 </span>
-              ) : (
-                <span className="mt-0.5 h-1" />
-              )}
+              ) : null}
             </button>
           )
         })}
       </div>
 
-      <div className="mt-3 border-t border-line pt-2.5">
-        <p className="text-[10px] font-bold tracking-[0.14em] text-muted uppercase">
-          {parseDateKey(selectedDateKey).toLocaleDateString('pt-BR', {
-            weekday: 'long',
-            day: '2-digit',
-            month: 'short',
-          })}
-        </p>
-
-        {loading ? (
-          <div className="mt-2 space-y-2" aria-hidden="true">
-            {Array.from({ length: 2 }).map((_, index) => (
-              <div key={index} className="skeleton-shimmer h-9 rounded-lg bg-line" />
-            ))}
-          </div>
-        ) : agenda.length === 0 ? (
-          <p className="mt-2 text-[11px] text-muted">Nenhum compromisso neste dia.</p>
-        ) : (
-          <ul className="mt-2 space-y-1.5">
-            {agenda.slice(0, 3).map((item) => {
-              const meta = getCategoryMeta(item)
-              const done = item.task_status === 'completed'
-              return (
-                <li
-                  key={item.id}
-                  className={`flex items-start gap-2 rounded-lg px-1.5 py-1.5 transition hover:bg-surface-2 ${done ? 'opacity-60' : ''}`}
-                >
-                  <span className="w-9 shrink-0 pt-0.5 text-[10px] font-bold tabular-nums text-muted">
-                    {formatShortTime(item)}
-                  </span>
-                  <span className={`mt-1 h-7 w-[3px] shrink-0 rounded-full ${meta.dotClass}`} />
-                  <div className="min-w-0 flex-1">
-                    <p className={`truncate text-[11px] font-bold text-ink ${done ? 'line-through' : ''}`}>
-                      {item.title}
-                    </p>
-                    <p className="truncate text-[10px] text-muted">
-                      {item.subject_name || meta.label}
-                      {item.room ? ` · ${item.room}` : ''}
-                    </p>
-                  </div>
-                </li>
-              )
-            })}
-          </ul>
-        )}
-
-        {!loading && agenda.length > 3 ? (
-          <Link
-            to="/calendario"
-            className="mt-1.5 inline-flex text-[10px] font-bold text-muted hover:text-ink"
-          >
-            e mais {agenda.length - 3} compromisso{agenda.length - 3 === 1 ? '' : 's'}
-          </Link>
-        ) : null}
-
-        {error ? (
-          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted">
-            Não foi possível carregar o calendário.
-            <button
-              type="button"
-              onClick={() => setReloadKey((value) => value + 1)}
-              className="font-bold text-ink underline decoration-accent decoration-2 underline-offset-2"
-            >
-              Tentar novamente
-            </button>
-          </div>
-        ) : (
-          <Link
-            to="/calendario"
-            className="mt-2.5 inline-flex items-center gap-1 text-[11px] font-bold text-ink underline decoration-accent decoration-2 underline-offset-4 hover:decoration-accent-strong"
-          >
-            Abrir calendário
-          </Link>
-        )}
-      </div>
       {todayKey === selectedDateKey ? <span className="sr-only">Dia atual selecionado</span> : null}
     </section>
   )

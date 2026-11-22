@@ -3,7 +3,7 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-sans: "Poppins", Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-montserrat: "Montserrat", sans-serif;
   --font-comfortaa: "Comfortaa", cursive, sans-serif;
   --font-segoe: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
@@ -26,10 +26,13 @@
   --color-accent-strong: var(--accent-strong);
   --color-accent-ink: var(--accent-ink);
   --color-pastel-lilac: var(--pastel-lilac);
+  --color-pastel-lavender: var(--pastel-lavender);
   --color-pastel-peach: var(--pastel-peach);
   --color-pastel-mint: var(--pastel-mint);
+  --color-pastel-green: var(--pastel-green);
   --color-pastel-sky: var(--pastel-sky);
   --color-pastel-rose: var(--pastel-rose);
+  --color-pastel-pink: var(--pastel-pink);
 }
 
 .font-montserrat {
@@ -60,22 +63,42 @@
   text-rendering: optimizeLegibility;
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 
-  --canvas: #f3f5fa;
-  --surface: #ffffff;
-  --surface-2: #f8fafc;
-  --ink: #101a33;
-  --muted: #667085;
-  --line: #e6eaf2;
-  --sidebar: #0b1220;
-  --sidebar-soft: #141d31;
-  --accent: #c6f24e;
-  --accent-strong: #b5e63a;
-  --accent-ink: #14210a;
-  --pastel-lilac: #ede9fe;
-  --pastel-peach: #ffe6d5;
-  --pastel-mint: #e3f7e8;
-  --pastel-sky: #e0f2fe;
-  --pastel-rose: #ffe4e6;
+  /* Tokens obrigatórios da especificação visual do Dashboard */
+  --app-backdrop-start: #D8B5F7;
+  --app-backdrop-end: #A979E8;
+  --surface-main: #FFFFFF;
+  --surface-soft: #FCFBFE;
+  --sidebar-bg: #15152F;
+  --text-primary: #17172F;
+  --text-secondary: #626278;
+  --text-muted: #9696A8;
+  --accent-lime: #D4FF3F;
+  --accent-lime-hover: #C6F32B;
+  --chart-bar: #1C1C38;
+  --pastel-peach: #FFE0C7;
+  --pastel-lavender: #E6DDFF;
+  --pastel-green: #E5F6C9;
+  --pastel-pink: #F9DDE8;
+  --pastel-sky: #E2F1FC;
+  --card-border: #ECECF2;
+  --divider: #F0F0F4;
+  --card-shadow: 0 3px 14px rgba(25, 22, 55, 0.055);
+
+  /* Aliases semânticos compatíveis com o restante da aplicação */
+  --canvas: #FCFBFE;
+  --surface: var(--surface-main);
+  --surface-2: var(--surface-soft);
+  --ink: var(--text-primary);
+  --muted: var(--text-secondary);
+  --line: var(--card-border);
+  --sidebar: var(--sidebar-bg);
+  --sidebar-soft: #202042;
+  --accent: var(--accent-lime);
+  --accent-strong: var(--accent-lime-hover);
+  --accent-ink: #17172F;
+  --pastel-lilac: var(--pastel-lavender);
+  --pastel-mint: var(--pastel-green);
+  --pastel-rose: var(--pastel-pink);
 }
 
 html.dark {
@@ -83,22 +106,40 @@ html.dark {
   background: var(--canvas);
   color-scheme: dark;
 
-  --canvas: #070b14;
-  --surface: #0e1524;
-  --surface-2: #101a2c;
-  --ink: #f1f5f9;
-  --muted: #94a3b8;
-  --line: #1e2a3f;
-  --sidebar: #05080f;
-  --sidebar-soft: #0d1524;
-  --accent: #c6f24e;
-  --accent-strong: #d4fa6d;
-  --accent-ink: #101a05;
-  --pastel-lilac: #211f3a;
-  --pastel-peach: #34231a;
-  --pastel-mint: #142b22;
-  --pastel-sky: #12283a;
-  --pastel-rose: #361a21;
+  --app-backdrop-start: #2A1D45;
+  --app-backdrop-end: #18122B;
+  --surface-main: #131326;
+  --surface-soft: #191930;
+  --sidebar-bg: #0C0C1E;
+  --text-primary: #F3F3FA;
+  --text-secondary: #A6A6BD;
+  --text-muted: #767690;
+  --accent-lime: #D4FF3F;
+  --accent-lime-hover: #C6F32B;
+  --chart-bar: #5E5E8A;
+  --pastel-peach: #3B281E;
+  --pastel-lavender: #292244;
+  --pastel-green: #1E3324;
+  --pastel-pink: #3B1F2E;
+  --pastel-sky: #1A2D40;
+  --card-border: #252540;
+  --divider: #202038;
+  --card-shadow: 0 3px 14px rgba(0, 0, 0, 0.35);
+
+  --canvas: #0E0E1F;
+  --surface: var(--surface-main);
+  --surface-2: var(--surface-soft);
+  --ink: var(--text-primary);
+  --muted: var(--text-secondary);
+  --line: var(--card-border);
+  --sidebar: var(--sidebar-bg);
+  --sidebar-soft: #171732;
+  --accent: var(--accent-lime);
+  --accent-strong: var(--accent-lime-hover);
+  --accent-ink: #17172F;
+  --pastel-lilac: var(--pastel-lavender);
+  --pastel-mint: var(--pastel-green);
+  --pastel-rose: var(--pastel-pink);
 }
 
 * {
@@ -858,27 +899,25 @@ html.dark .tms-mark {
 /* ==========================================================================
    APP SHELL E DASHBOARD — SUPERFÍCIES, CARTÕES E MOVIMENTO
    ========================================================================== */
-.app-shell {
-  background-color: var(--canvas);
-  background-image:
-    radial-gradient(58rem 38rem at 94% -12%, color-mix(in oklab, var(--accent) 26%, transparent), transparent 68%),
-    radial-gradient(46rem 34rem at -10% 106%, color-mix(in oklab, var(--pastel-lilac) 85%, transparent), transparent 70%);
+.app-backdrop {
+  background: linear-gradient(135deg, var(--app-backdrop-start) 0%, var(--app-backdrop-end) 100%);
 }
 
-html.dark .app-shell {
-  background-image:
-    radial-gradient(58rem 38rem at 94% -12%, color-mix(in oklab, var(--accent) 9%, transparent), transparent 68%),
-    radial-gradient(46rem 34rem at -10% 106%, rgba(99, 102, 241, 0.14), transparent 70%);
+.app-frame {
+  background-color: var(--surface-main);
+  box-shadow: 0 22px 60px -16px rgba(21, 21, 47, 0.22);
+}
+
+.app-shell {
+  background-color: var(--surface-main);
 }
 
 .dashboard-card {
   min-width: 0;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  box-shadow:
-    0 1px 2px rgba(16, 24, 40, 0.04),
-    0 18px 40px -28px rgba(16, 24, 40, 0.25);
+  background: var(--surface-main);
+  border: 1px solid var(--card-border);
+  border-radius: 18px;
+  box-shadow: var(--card-shadow);
   transition:
     transform 220ms var(--ease-out-expo),
     border-color 220ms ease,
@@ -887,18 +926,12 @@ html.dark .app-shell {
 
 @media (hover: hover) {
   .dashboard-card:hover {
-    transform: translateY(-2px);
-    border-color: color-mix(in oklab, var(--accent) 55%, var(--line));
-    box-shadow:
-      0 2px 4px rgba(16, 24, 40, 0.05),
-      0 26px 52px -28px rgba(16, 24, 40, 0.3);
+    border-color: color-mix(in oklab, var(--text-muted) 35%, var(--card-border));
   }
 }
 
 html.dark .dashboard-card {
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.45),
-    0 18px 40px -28px rgba(0, 0, 0, 0.85);
+  box-shadow: var(--card-shadow);
 }
 
 .hero-grid {
@@ -969,8 +1002,8 @@ html.dark .hero-grid {
 
 #app-sidebar .brand-word,
 #app-sidebar-mobile .brand-word {
-  font-size: 0.95rem;
-  letter-spacing: 0.07em;
+  font-size: 0.86rem;
+  letter-spacing: 0.05em;
 }
 
 .sidebar-label {

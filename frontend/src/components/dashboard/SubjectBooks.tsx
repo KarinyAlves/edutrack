@@ -1,28 +1,41 @@
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, BookOpen } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import type { StudentSubject } from '../../api/types'
-import { BOOK_COVER_STYLES, getProfessorDisplay, toSemesterLabel } from '../../utils/subjects'
-import { PerspectiveBook } from '../perspective-book'
+import { getProfessorDisplay } from '../../utils/subjects'
 import { MetricValue } from '../MetricValue'
 
-const RADIUS = 15
+const RADIUS = 14
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS
+
+const SUBJECT_PASTELS = [
+  'bg-[var(--pastel-lavender)] text-[#513788] dark:text-[#D5C2FF]',
+  'bg-[var(--pastel-peach)] text-[#8A4A1C] dark:text-[#FFD0AD]',
+  'bg-[var(--pastel-green)] text-[#2D6217] dark:text-[#C8F09B]',
+  'bg-[var(--pastel-pink)] text-[#922F56] dark:text-[#FBB8D0]',
+]
 
 function ProgressRing({ percent, ready }: { percent: number; ready: boolean }) {
   const offset = ready ? CIRCUMFERENCE * (1 - percent / 100) : CIRCUMFERENCE
   return (
-    <span className="relative grid size-9 shrink-0 place-items-center">
-      <svg viewBox="0 0 40 40" className="size-9 -rotate-90" aria-hidden="true">
-        <circle cx="20" cy="20" r={RADIUS} fill="none" stroke="var(--line)" strokeWidth="4" />
+    <span className="relative grid size-[36px] shrink-0 place-items-center">
+      <svg viewBox="0 0 36 36" className="size-[36px] -rotate-90" aria-hidden="true">
         <circle
-          cx="20"
-          cy="20"
+          cx="18"
+          cy="18"
           r={RADIUS}
           fill="none"
-          stroke="var(--accent)"
-          strokeWidth="4"
+          stroke="var(--card-border)"
+          strokeWidth="3.5"
+        />
+        <circle
+          cx="18"
+          cy="18"
+          r={RADIUS}
+          fill="none"
+          stroke="var(--accent-lime)"
+          strokeWidth="3.5"
           strokeLinecap="round"
           strokeDasharray={CIRCUMFERENCE}
           strokeDashoffset={offset}
@@ -50,87 +63,108 @@ export function SubjectBooks({
   }, [])
 
   return (
-    <section className={`dashboard-card p-4 sm:p-5 ${className}`} aria-labelledby="subject-books">
-      <header className="flex items-start justify-between gap-3">
+    <section className={`dashboard-card p-[17px] ${className}`} aria-labelledby="subject-books">
+      <header className="flex items-center justify-between gap-3">
         <div>
-          <h2 id="subject-books" className="text-[15px] font-black tracking-tight text-ink">
+          <h2
+            id="subject-books"
+            className="text-[17px] leading-[1.2] font-semibold tracking-tight text-[var(--text-primary)]"
+          >
             Disciplinas em andamento
           </h2>
-          <p className="mt-0.5 text-[11px] text-muted">Progresso por matéria</p>
+          <p className="mt-0.5 text-[11px] font-normal text-[var(--text-secondary)]">
+            Progresso por matéria neste semestre
+          </p>
         </div>
         <Link
           to="/disciplinas"
-          className="inline-flex items-center gap-1 text-[11px] font-bold text-ink underline decoration-accent decoration-2 underline-offset-4 hover:decoration-accent-strong"
+          className="inline-flex items-center gap-1 rounded-full border border-[var(--card-border)] bg-[var(--surface-soft)] px-3 py-1 text-[11px] font-medium text-[var(--text-secondary)] transition hover:border-[var(--accent-lime)] hover:text-[var(--text-primary)]"
         >
           Ver disciplinas
-          <ArrowRight size={13} aria-hidden="true" />
+          <ArrowRight size={12} aria-hidden="true" />
         </Link>
       </header>
 
       {loading ? (
-        <div className="mt-4 flex gap-5" aria-hidden="true">
-          {Array.from({ length: 4 }).map((_, index) => (
-            <div key={index} className="flex w-[150px] shrink-0 flex-col items-center">
-              <div className="skeleton-shimmer aspect-[49/60] w-[150px] rounded-md bg-line" />
-              <div className="skeleton-shimmer mt-3 h-3 w-16 rounded-full bg-line" />
-            </div>
+        <div className="mt-3.5 space-y-2.5" aria-hidden="true">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div key={index} className="skeleton-shimmer h-[72px] rounded-[16px] bg-line" />
           ))}
         </div>
       ) : subjects.length === 0 ? (
-        <div className="mt-4 rounded-2xl border border-dashed border-line p-6 text-center">
-          <p className="text-sm font-bold text-ink">Nenhuma disciplina ativa</p>
-          <p className="mt-1 text-[11px] text-muted">
+        <div className="mt-3.5 rounded-2xl border border-dashed border-[var(--card-border)] p-6 text-center">
+          <p className="text-[14px] font-semibold text-[var(--text-primary)]">
+            Nenhuma disciplina ativa
+          </p>
+          <p className="mt-1 text-[11.5px] text-[var(--text-secondary)]">
             Configure seu semestre para acompanhar o progresso.
           </p>
           <Link
             to="/disciplinas"
-            className="press mt-3 inline-flex min-h-9 items-center gap-2 rounded-lg bg-accent px-3 text-[11px] font-bold text-accent-ink transition hover:bg-accent-strong"
+            className="press mt-3 inline-flex h-[34px] items-center gap-2 rounded-[12px] bg-[var(--accent-lime)] px-3.5 text-[12px] font-semibold text-[#17172F] transition hover:bg-[var(--accent-lime-hover)]"
           >
             Configurar semestre
           </Link>
         </div>
       ) : (
-        <div className="books-scroll-container mt-4 -mx-1 flex gap-4 px-1 pt-1 pb-2 sm:gap-6">
+        <ul className="mt-3.5 space-y-[10px]">
           {subjects.map((subject, index) => {
             const percent = Math.max(0, Math.min(100, subject.progress_percent))
             const workload = subject.custom_workload_hours ?? subject.subject.workload_hours
+            const toneClass = SUBJECT_PASTELS[index % SUBJECT_PASTELS.length]
+            const professorName = getProfessorDisplay(subject)
+
             return (
-              <div
+              <li
                 key={subject.id}
-                className="flex w-[150px] shrink-0 flex-col items-center"
-                title={`${subject.subject.name} — ${percent}% concluído`}
+                className="flex min-h-[70px] items-center justify-between gap-3 rounded-[16px] border border-[var(--card-border)] bg-[var(--surface-main)] px-3.5 py-2.5 shadow-[0_2px_8px_rgba(25,22,55,0.03)] transition hover:border-[var(--text-muted)]/35"
               >
-                <PerspectiveBook
-                  size="sm"
-                  textured
-                  className={BOOK_COVER_STYLES[index % BOOK_COVER_STYLES.length]}
-                >
-                  <div className="flex h-full flex-col justify-between gap-2 select-none">
-                    <p className="text-[10px] leading-3 font-bold tracking-wide text-white/70 uppercase">
-                      {toSemesterLabel(subject.subject.semester)}
-                    </p>
-                    <h3 className="text-[12px] leading-[15px] font-extrabold tracking-tight wrap-break-word text-white">
+                <div className="flex min-w-0 flex-1 items-center gap-3">
+                  <span
+                    className={`grid size-[40px] shrink-0 place-items-center rounded-[12px] ${toneClass}`}
+                    aria-hidden="true"
+                  >
+                    <BookOpen size={17} strokeWidth={1.9} />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <h3
+                      title={subject.subject.name}
+                      className="truncate text-[14.5px] leading-[1.25] font-semibold text-[var(--text-primary)]"
+                    >
                       {subject.subject.name}
                     </h3>
-                    <p className="mt-auto border-t border-white/15 pt-1.5 text-[9px] leading-3 wrap-break-word text-white/85">
-                      {getProfessorDisplay(subject)}
+                    <p
+                      title={professorName}
+                      className="mt-0.5 truncate text-[11.5px] font-normal text-[var(--text-secondary)]"
+                    >
+                      {professorName}
                     </p>
-                  </div>
-                </PerspectiveBook>
-
-                <div className="mt-3 flex w-full items-center justify-center gap-2">
-                  <ProgressRing percent={percent} ready={ready} />
-                  <div className="min-w-0 text-left">
-                    <p className="text-[13px] leading-none font-black text-ink">
-                      <MetricValue value={percent} suffix="%" />
-                    </p>
-                    <p className="mt-1 text-[10px] text-muted">{workload ? `${workload}h` : '—'}</p>
                   </div>
                 </div>
-              </div>
+
+                <div className="flex shrink-0 items-center gap-4">
+                  {workload ? (
+                    <div className="hidden text-right sm:block">
+                      <p className="text-[12px] leading-none font-semibold text-[var(--text-primary)]">
+                        {workload}h
+                      </p>
+                      <p className="mt-1 text-[10px] font-normal text-[var(--text-muted)]">
+                        Carga horária
+                      </p>
+                    </div>
+                  ) : null}
+
+                  <div className="flex items-center gap-2">
+                    <ProgressRing percent={percent} ready={ready} />
+                    <span className="w-10 text-right text-[13px] font-semibold text-[var(--text-primary)] tabular-nums">
+                      <MetricValue value={percent} suffix="%" />
+                    </span>
+                  </div>
+                </div>
+              </li>
             )
           })}
-        </div>
+        </ul>
       )}
     </section>
   )

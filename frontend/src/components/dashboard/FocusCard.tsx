@@ -15,11 +15,10 @@ export function FocusCard({
 }) {
   if (loading) {
     return (
-      <section className="relative overflow-hidden rounded-[20px] border border-line bg-surface p-5">
-        <div className="skeleton-shimmer h-2.5 w-20 rounded-full bg-line" />
-        <div className="skeleton-shimmer mt-5 h-6 w-4/5 rounded-full bg-line" />
-        <div className="skeleton-shimmer mt-2.5 h-2.5 w-2/5 rounded-full bg-line" />
-        <div className="skeleton-shimmer mt-5 h-9 w-40 rounded-lg bg-line" />
+      <section className="flex h-full min-h-[118px] flex-col justify-between rounded-[18px] bg-[var(--sidebar-bg)] p-[16px]">
+        <div className="skeleton-shimmer h-2.5 w-20 rounded-full bg-white/10" />
+        <div className="skeleton-shimmer mt-2 h-5 w-4/5 rounded-full bg-white/10" />
+        <div className="skeleton-shimmer mt-2 h-8 w-36 rounded-xl bg-white/10" />
       </section>
     )
   }
@@ -37,7 +36,7 @@ export function FocusCard({
     : task
       ? {
           title: task.title,
-          meta: `${task.subject_name}${due ? ` · ${due.label}` : ''}`,
+          meta: `${task.subject_name || 'Disciplina'}${due ? ` · ${due.label}` : ''}`,
           cta: 'Continuar estudando',
           to: `/estudo/${task.id}`,
         }
@@ -49,38 +48,34 @@ export function FocusCard({
         }
 
   return (
-    <section className="relative overflow-hidden rounded-[20px] border border-accent/40 bg-accent/12 p-5 dark:border-transparent dark:bg-sidebar dark:text-white">
-      <div className="hero-grid" aria-hidden="true" />
-      <div
-        aria-hidden="true"
-        className="hero-blob -top-12 -right-10 size-40 bg-accent/45 dark:bg-accent/35"
-      />
-      <div
-        aria-hidden="true"
-        className="hero-blob -bottom-14 -left-12 size-44 bg-[#8b5cf6]/8 dark:bg-[#8b5cf6]/25"
-      />
-
-      <div className="relative">
-        <div className="flex items-start justify-between gap-2">
-          <p className="text-[10px] font-bold tracking-[0.16em] text-ink/55 uppercase dark:text-accent">
+    <section className="flex h-full min-h-[118px] flex-col justify-between rounded-[18px] bg-[var(--sidebar-bg)] p-[14px] text-white shadow-[var(--card-shadow)]">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-semibold tracking-[0.08em] text-[var(--accent-lime)] uppercase">
             Foco de hoje
           </p>
-          <span className="float-slow grid size-9 place-items-center rounded-xl bg-surface/70 text-ink/60 dark:bg-white/10 dark:text-accent">
-            <Target size={17} aria-hidden="true" />
-          </span>
+          <h2
+            title={content.title}
+            className="mt-1 truncate text-[15.5px] leading-[1.25] font-semibold tracking-tight text-white"
+          >
+            {content.title}
+          </h2>
+          <p title={content.meta} className="mt-0.5 truncate text-[11px] font-normal text-white/70">
+            {content.meta}
+          </p>
         </div>
+        <span className="grid size-7 shrink-0 place-items-center rounded-[9px] bg-white/8 text-[var(--accent-lime)]">
+          <Target size={14} aria-hidden="true" />
+        </span>
+      </div>
 
-        <h2 className="mt-3 text-lg leading-snug font-black tracking-tight wrap-break-word text-ink dark:text-white">
-          {content.title}
-        </h2>
-        <p className="mt-1.5 text-[13px] leading-5 text-muted dark:text-white/65">{content.meta}</p>
-
+      <div className="mt-2 flex items-center justify-end">
         <Link
           to={content.to}
-          className="press mt-4 inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-accent px-3 text-[13px] font-bold text-accent-ink transition hover:bg-accent-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ink)]"
+          className="press inline-flex h-[32px] shrink-0 items-center gap-1.5 rounded-[11px] bg-[var(--accent-lime)] px-3 text-[11.5px] font-semibold text-[#17172F] transition hover:bg-[var(--accent-lime-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-lime)]"
         >
           {content.cta}
-          <ArrowRight size={14} aria-hidden="true" />
+          <ArrowRight size={13} aria-hidden="true" />
         </Link>
       </div>
     </section>
